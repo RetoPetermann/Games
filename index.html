@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arcade Games</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #0a0a1a;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: 'Courier New', monospace;
+            color: #e0e0e0;
+            overflow-x: hidden;
+        }
+
+        canvas#stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .content {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 960px;
+            padding: 40px 20px;
+        }
+
+        h1 {
+            font-family: 'Press Start 2P', 'Courier New', monospace;
+            font-size: 2.2rem;
+            text-align: center;
+            margin-bottom: 12px;
+            background: linear-gradient(180deg, #fff 0%, #aaa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: none;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 50px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+
+        .games {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 28px;
+        }
+
+        .game-card {
+            background: linear-gradient(145deg, #12122a, #1a1a3a);
+            border: 1px solid #2a2a4a;
+            border-radius: 12px;
+            padding: 28px 24px;
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.2s, border-color 0.3s, box-shadow 0.3s;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .game-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .game-card.asteroids::before { background: linear-gradient(90deg, #00ff88, #00cc66); }
+        .game-card.asteroids:hover { border-color: #00ff88; box-shadow: 0 12px 40px rgba(0, 255, 136, 0.15); }
+
+        .game-card.invaders::before { background: linear-gradient(90deg, #44ff44, #22cc22); }
+        .game-card.invaders:hover { border-color: #44ff44; box-shadow: 0 12px 40px rgba(68, 255, 68, 0.15); }
+
+        .game-card.tetris::before { background: linear-gradient(90deg, #ff6644, #ff4488); }
+        .game-card.tetris:hover { border-color: #ff6644; box-shadow: 0 12px 40px rgba(255, 102, 68, 0.15); }
+
+        .game-preview {
+            width: 100%;
+            height: 150px;
+            border-radius: 8px;
+            background: #000;
+            border: 1px solid #222;
+            overflow: hidden;
+        }
+
+        .game-preview canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .game-title {
+            font-family: 'Press Start 2P', 'Courier New', monospace;
+            font-size: 1rem;
+            letter-spacing: 1px;
+        }
+
+        .game-card.asteroids .game-title { color: #00ff88; }
+        .game-card.invaders .game-title { color: #44ff44; }
+        .game-card.tetris .game-title { color: #ff6644; }
+
+        .game-desc {
+            color: #888;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .game-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: auto;
+            padding-top: 12px;
+            border-top: 1px solid #1e1e3e;
+        }
+
+        .game-controls {
+            color: #555;
+            font-size: 0.75rem;
+        }
+
+        .play-btn {
+            font-family: 'Press Start 2P', 'Courier New', monospace;
+            font-size: 0.6rem;
+            padding: 8px 16px;
+            border-radius: 4px;
+            letter-spacing: 1px;
+        }
+
+        .game-card.asteroids .play-btn { color: #00ff88; border: 1px solid #00ff8844; }
+        .game-card.invaders .play-btn { color: #44ff44; border: 1px solid #44ff4444; }
+        .game-card.tetris .play-btn { color: #ff6644; border: 1px solid #ff664444; }
+
+        footer {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 40px 20px;
+            color: #333;
+            font-size: 0.75rem;
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="stars"></canvas>
+
+    <div class="content">
+        <h1>ARCADE</h1>
+        <p class="subtitle">Retro Browser Games</p>
+
+        <div class="games">
+            <a href="Asteroids/index.html" class="game-card asteroids">
+                <div class="game-preview"><canvas id="prev-asteroids"></canvas></div>
+                <div class="game-title">Asteroids</div>
+                <div class="game-desc">Steuere dein Raumschiff durch ein Asteroidenfeld. Zerstöre Asteroiden, sammle Punkte und überlebe so lange wie möglich.</div>
+                <div class="game-meta">
+                    <span class="game-controls">Pfeiltasten + Leertaste</span>
+                    <span class="play-btn">SPIELEN ▸</span>
+                </div>
+            </a>
+
+            <a href="Space%20Invaders/Space%20Invaders.html" class="game-card invaders">
+                <div class="game-preview"><canvas id="prev-invaders"></canvas></div>
+                <div class="game-title">Space Invaders</div>
+                <div class="game-desc">Verteidige die Erde gegen Wellen von Alien-Invasoren. 10 Level mit steigendem Schwierigkeitsgrad warten auf dich.</div>
+                <div class="game-meta">
+                    <span class="game-controls">Pfeiltasten + Leertaste</span>
+                    <span class="play-btn">SPIELEN ▸</span>
+                </div>
+            </a>
+
+            <a href="Tetris/tetris.html" class="game-card tetris">
+                <div class="game-preview"><canvas id="prev-tetris"></canvas></div>
+                <div class="game-title">Tetris</div>
+                <div class="game-desc">Der Puzzle-Klassiker. Drehe und platziere fallende Blöcke, um Reihen zu vervollständigen und Punkte zu erzielen.</div>
+                <div class="game-meta">
+                    <span class="game-controls">Pfeiltasten + ↑ Drehen</span>
+                    <span class="play-btn">SPIELEN ▸</span>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <footer>HTML5 Canvas &bull; Vanilla JavaScript &bull; Keine Abhängigkeiten</footer>
+
+    <script>
+    // Animated starfield background
+    (function() {
+        const canvas = document.getElementById('stars');
+        const ctx = canvas.getContext('2d');
+        let stars = [];
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        function createStars() {
+            stars = [];
+            const count = Math.floor((canvas.width * canvas.height) / 3000);
+            for (let i = 0; i < count; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 1.5 + 0.5,
+                    speed: Math.random() * 0.3 + 0.05,
+                    brightness: Math.random()
+                });
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const time = Date.now() * 0.001;
+            for (const s of stars) {
+                s.y += s.speed;
+                if (s.y > canvas.height) { s.y = 0; s.x = Math.random() * canvas.width; }
+                const alpha = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(time * 2 + s.brightness * 10));
+                ctx.fillStyle = `rgba(255,255,255,${alpha * s.brightness})`;
+                ctx.fillRect(s.x, s.y, s.size, s.size);
+            }
+            requestAnimationFrame(draw);
+        }
+
+        window.addEventListener('resize', () => { resize(); createStars(); });
+        resize();
+        createStars();
+        draw();
+    })();
+
+    // Mini preview: Asteroids
+    (function() {
+        const c = document.getElementById('prev-asteroids');
+        const ctx = c.getContext('2d');
+        const W = c.width = c.offsetWidth * 2;
+        const H = c.height = c.offsetHeight * 2;
+        let asteroids = [];
+
+        for (let i = 0; i < 8; i++) {
+            const r = 10 + Math.random() * 25;
+            const verts = [];
+            const n = 7 + Math.floor(Math.random() * 5);
+            for (let j = 0; j < n; j++) {
+                const a = (j / n) * Math.PI * 2;
+                const d = r * (0.7 + Math.random() * 0.3);
+                verts.push({ x: Math.cos(a) * d, y: Math.sin(a) * d });
+            }
+            asteroids.push({
+                x: Math.random() * W, y: Math.random() * H,
+                vx: (Math.random() - 0.5) * 1.5, vy: (Math.random() - 0.5) * 1.5,
+                verts
+            });
+        }
+
+        // Ship
+        let shipAngle = 0;
+        const shipX = W / 2, shipY = H / 2;
+
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+            ctx.strokeStyle = '#00ff88';
+            ctx.lineWidth = 1.5;
+
+            // Draw ship
+            shipAngle += 0.01;
+            ctx.save();
+            ctx.translate(shipX, shipY);
+            ctx.rotate(shipAngle);
+            ctx.beginPath();
+            ctx.moveTo(12, 0);
+            ctx.lineTo(-8, -7);
+            ctx.lineTo(-5, 0);
+            ctx.lineTo(-8, 7);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.restore();
+
+            // Draw asteroids
+            for (const a of asteroids) {
+                a.x += a.vx; a.y += a.vy;
+                if (a.x < -30) a.x += W + 60;
+                if (a.x > W + 30) a.x -= W + 60;
+                if (a.y < -30) a.y += H + 60;
+                if (a.y > H + 30) a.y -= H + 60;
+
+                ctx.beginPath();
+                ctx.moveTo(a.x + a.verts[0].x, a.y + a.verts[0].y);
+                for (let i = 1; i < a.verts.length; i++) {
+                    ctx.lineTo(a.x + a.verts[i].x, a.y + a.verts[i].y);
+                }
+                ctx.closePath();
+                ctx.stroke();
+            }
+            requestAnimationFrame(draw);
+        }
+        draw();
+    })();
+
+    // Mini preview: Space Invaders
+    (function() {
+        const c = document.getElementById('prev-invaders');
+        const ctx = c.getContext('2d');
+        const W = c.width = c.offsetWidth * 2;
+        const H = c.height = c.offsetHeight * 2;
+
+        const rows = 4, cols = 8;
+        const size = 12, gap = 8;
+        const gridW = cols * (size + gap);
+        let offsetX = (W - gridW) / 2;
+        let dir = 1, step = 0, frame = 0;
+
+        function drawInvader(x, y, f) {
+            ctx.fillRect(x + 2, y, 8, 2);
+            ctx.fillRect(x, y + 2, 12, 2);
+            ctx.fillRect(x, y + 4, 12, 2);
+            if (f % 2 === 0) {
+                ctx.fillRect(x - 2, y + 6, 4, 2);
+                ctx.fillRect(x + 10, y + 6, 4, 2);
+            } else {
+                ctx.fillRect(x, y + 6, 4, 2);
+                ctx.fillRect(x + 8, y + 6, 4, 2);
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+            ctx.fillStyle = '#44ff44';
+
+            step++;
+            if (step % 40 === 0) {
+                offsetX += dir * 10;
+                frame++;
+                if (offsetX > W - gridW - 20 || offsetX < 20) dir *= -1;
+            }
+
+            for (let r = 0; r < rows; r++) {
+                for (let cl = 0; cl < cols; cl++) {
+                    const x = offsetX + cl * (size + gap);
+                    const y = 30 + r * (size + gap);
+                    drawInvader(x, y, frame);
+                }
+            }
+
+            // Player
+            ctx.fillStyle = '#44ff44';
+            ctx.fillRect(W / 2 - 8, H - 24, 16, 6);
+            ctx.fillRect(W / 2 - 2, H - 30, 4, 6);
+
+            requestAnimationFrame(draw);
+        }
+        draw();
+    })();
+
+    // Mini preview: Tetris
+    (function() {
+        const c = document.getElementById('prev-tetris');
+        const ctx = c.getContext('2d');
+        const W = c.width = c.offsetWidth * 2;
+        const H = c.height = c.offsetHeight * 2;
+
+        const cols = 10, rows = 20;
+        const bs = Math.min(Math.floor(W / cols), Math.floor(H / rows));
+        const ox = (W - cols * bs) / 2;
+        const oy = (H - rows * bs) / 2;
+
+        const colors = ['#00f0f0', '#f0f000', '#a000f0', '#00f000', '#f00000', '#0000f0', '#f0a000'];
+        const board = Array.from({length: rows}, () => Array(cols).fill(0));
+
+        // Fill some bottom rows
+        for (let r = rows - 5; r < rows; r++) {
+            for (let cl = 0; cl < cols; cl++) {
+                if (Math.random() > 0.3) {
+                    board[r][cl] = Math.floor(Math.random() * 7) + 1;
+                }
+            }
+        }
+
+        const pieces = [
+            [[1,1,1,1]], [[1,1],[1,1]], [[0,1,0],[1,1,1]],
+            [[1,0],[1,0],[1,1]], [[0,1],[0,1],[1,1]]
+        ];
+
+        let piece = pieces[Math.floor(Math.random() * pieces.length)];
+        let px = 3, py = 0, pColor = Math.floor(Math.random() * 7);
+        let tick = 0;
+
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+
+            // Grid bg
+            ctx.fillStyle = '#111';
+            ctx.fillRect(ox, oy, cols * bs, rows * bs);
+
+            // Board
+            for (let r = 0; r < rows; r++) {
+                for (let cl = 0; cl < cols; cl++) {
+                    if (board[r][cl]) {
+                        ctx.fillStyle = colors[board[r][cl] - 1];
+                        ctx.fillRect(ox + cl * bs + 1, oy + r * bs + 1, bs - 2, bs - 2);
+                    }
+                }
+            }
+
+            // Falling piece
+            ctx.fillStyle = colors[pColor];
+            for (let r = 0; r < piece.length; r++) {
+                for (let cl = 0; cl < piece[r].length; cl++) {
+                    if (piece[r][cl]) {
+                        ctx.fillRect(ox + (px + cl) * bs + 1, oy + (py + r) * bs + 1, bs - 2, bs - 2);
+                    }
+                }
+            }
+
+            // Grid lines
+            ctx.strokeStyle = '#1a1a2e';
+            ctx.lineWidth = 0.5;
+            for (let cl = 0; cl <= cols; cl++) {
+                ctx.beginPath();
+                ctx.moveTo(ox + cl * bs, oy);
+                ctx.lineTo(ox + cl * bs, oy + rows * bs);
+                ctx.stroke();
+            }
+            for (let r = 0; r <= rows; r++) {
+                ctx.beginPath();
+                ctx.moveTo(ox, oy + r * bs);
+                ctx.lineTo(ox + cols * bs, oy + r * bs);
+                ctx.stroke();
+            }
+
+            tick++;
+            if (tick % 30 === 0) {
+                py++;
+                if (py + piece.length > rows) {
+                    py = 0;
+                    px = 2 + Math.floor(Math.random() * 5);
+                    piece = pieces[Math.floor(Math.random() * pieces.length)];
+                    pColor = Math.floor(Math.random() * 7);
+                }
+            }
+
+            requestAnimationFrame(draw);
+        }
+        draw();
+    })();
+    </script>
+</body>
+</html>
