@@ -105,6 +105,9 @@
         .game-card.tetris::before { background: linear-gradient(90deg, #ff6644, #ff4488); }
         .game-card.tetris:hover { border-color: #ff6644; box-shadow: 0 12px 40px rgba(255, 102, 68, 0.15); }
 
+        .game-card.pacman::before { background: linear-gradient(90deg, #ffff00, #ffaa00); }
+        .game-card.pacman:hover { border-color: #ffff00; box-shadow: 0 12px 40px rgba(255, 255, 0, 0.15); }
+
         .game-preview {
             width: 100%;
             height: 150px;
@@ -160,6 +163,8 @@
         .game-card.asteroids .play-btn { color: #00ff88; border: 1px solid #00ff8844; }
         .game-card.invaders .play-btn { color: #44ff44; border: 1px solid #44ff4444; }
         .game-card.tetris .play-btn { color: #ff6644; border: 1px solid #ff664444; }
+        .game-card.pacman .game-title { color: #ffff00; }
+        .game-card.pacman .play-btn { color: #ffff00; border: 1px solid #ffff0044; }
 
         footer {
             position: relative;
@@ -206,6 +211,16 @@
                 <div class="game-desc">Der Puzzle-Klassiker. Drehe und platziere fallende Blöcke, um Reihen zu vervollständigen und Punkte zu erzielen.</div>
                 <div class="game-meta">
                     <span class="game-controls">Pfeiltasten + ↑ Drehen</span>
+                    <span class="play-btn">SPIELEN ▸</span>
+                </div>
+            </a>
+
+            <a href="Pac-Man/index.html" class="game-card pacman">
+                <div class="game-preview"><canvas id="prev-pacman"></canvas></div>
+                <div class="game-title">Pac-Man</div>
+                <div class="game-desc">Frisst alle Punkte im Labyrinth, weiche den 4 Geistern aus und nutze Power-Pellets um sie zu fressen.</div>
+                <div class="game-meta">
+                    <span class="game-controls">Pfeiltasten</span>
                     <span class="play-btn">SPIELEN ▸</span>
                 </div>
             </a>
@@ -468,6 +483,90 @@
                     pColor = Math.floor(Math.random() * 7);
                 }
             }
+
+            requestAnimationFrame(draw);
+        }
+        draw();
+    })();
+    // Mini preview: Pac-Man
+    (function() {
+        const c = document.getElementById('prev-pacman');
+        const ctx = c.getContext('2d');
+        const W = c.width = c.offsetWidth * 2;
+        const H = c.height = c.offsetHeight * 2;
+
+        // Simple maze preview: just corridors and a few dots
+        const TILE = 14, COLS = Math.floor(W/TILE), ROWS = Math.floor(H/TILE);
+        // Pac-Man moving along a corridor
+        let px = TILE*2, py = H/2, vx = 1.5, mouth = 0.25, mdir = -1;
+        const dots = [];
+        for (let i = 3; i < COLS-1; i++) dots.push({ x: i*TILE+TILE/2, eaten: false });
+
+        function draw() {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0,0,W,H);
+
+            // Corridor walls
+            ctx.fillStyle = '#1a1aff';
+            ctx.fillRect(0, H/2-TILE*1.4, W, TILE*0.5);
+            ctx.fillRect(0, H/2+TILE*0.9, W, TILE*0.5);
+            // Inner shading
+            ctx.fillStyle = '#000088';
+            ctx.fillRect(0, H/2-TILE*1.4+2, W, TILE*0.5-4);
+            ctx.fillRect(0, H/2+TILE*0.9+2, W, TILE*0.5-4);
+
+            // Dots
+            ctx.fillStyle = '#ffb8ae';
+            for (const d of dots) {
+                if (!d.eaten) {
+                    ctx.beginPath();
+                    ctx.arc(d.x, py, 3, 0, Math.PI*2);
+                    ctx.fill();
+                }
+            }
+
+            // Pac-Man
+            mouth += mdir * 0.08;
+            if (mouth <= 0.04) { mouth=0.04; mdir=1; }
+            if (mouth >= 0.28) { mouth=0.28; mdir=-1; }
+            const m = mouth * Math.PI;
+            const dir = vx > 0 ? 0 : Math.PI;
+            ctx.fillStyle = '#ffff00';
+            ctx.beginPath();
+            ctx.arc(px, py, TILE*0.45, dir+m, dir+Math.PI*2-m);
+            ctx.lineTo(px, py);
+            ctx.fill();
+
+            // Move
+            px += vx;
+            if (px > W+TILE) { px=-TILE; dots.forEach(d=>d.eaten=false); }
+            if (px < -TILE)  { px=W+TILE; dots.forEach(d=>d.eaten=false); }
+
+            // Eat dots
+            for (const d of dots) {
+                if (!d.eaten && Math.abs(px-d.x)<TILE*0.7) d.eaten=true;
+            }
+
+            // Ghost
+            const gx = W*0.75, gy = py;
+            ctx.fillStyle = '#ff0000';
+            ctx.beginPath();
+            ctx.arc(gx, gy-TILE*0.06, TILE*0.45, Math.PI, 0);
+            ctx.lineTo(gx+TILE*0.45, gy+TILE*0.8);
+            const gw=TILE*0.9/3;
+            for(let i=2;i>=0;i--){
+                const wx=(gx-TILE*0.45)+i*gw;
+                ctx.quadraticCurveTo(wx+gw*0.25,gy+TILE*1.15,wx+gw*0.5,gy+TILE*0.8);
+                ctx.quadraticCurveTo(wx+gw*0.75,gy+TILE*0.62,wx+gw,gy+TILE*0.8);
+            }
+            ctx.fill();
+            // Ghost eyes
+            ctx.fillStyle='#fff';
+            ctx.beginPath(); ctx.ellipse(gx-4,gy-4,3,4,0,0,Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.ellipse(gx+4,gy-4,3,4,0,0,Math.PI*2); ctx.fill();
+            ctx.fillStyle='#00f';
+            ctx.beginPath(); ctx.arc(gx-4-2,gy-4,2,0,Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(gx+4-2,gy-4,2,0,Math.PI*2); ctx.fill();
 
             requestAnimationFrame(draw);
         }
