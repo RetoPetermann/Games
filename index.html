@@ -108,6 +108,9 @@
         .game-card.pacman::before { background: linear-gradient(90deg, #ffff00, #ffaa00); }
         .game-card.pacman:hover { border-color: #ffff00; box-shadow: 0 12px 40px rgba(255, 255, 0, 0.15); }
 
+        .game-card.breakout::before { background: linear-gradient(90deg, #00aaff, #0055ff); }
+        .game-card.breakout:hover { border-color: #00aaff; box-shadow: 0 12px 40px rgba(0, 170, 255, 0.15); }
+
         .game-preview {
             width: 100%;
             height: 150px;
@@ -131,6 +134,7 @@
         .game-card.asteroids .game-title { color: #00ff88; }
         .game-card.invaders .game-title { color: #44ff44; }
         .game-card.tetris .game-title { color: #ff6644; }
+        .game-card.breakout .game-title { color: #00aaff; }
 
         .game-desc {
             color: #888;
@@ -165,6 +169,7 @@
         .game-card.tetris .play-btn { color: #ff6644; border: 1px solid #ff664444; }
         .game-card.pacman .game-title { color: #ffff00; }
         .game-card.pacman .play-btn { color: #ffff00; border: 1px solid #ffff0044; }
+        .game-card.breakout .play-btn { color: #00aaff; border: 1px solid #00aaff44; }
 
         footer {
             position: relative;
@@ -221,6 +226,16 @@
                 <div class="game-desc">Frisst alle Punkte im Labyrinth, weiche den 4 Geistern aus und nutze Power-Pellets um sie zu fressen.</div>
                 <div class="game-meta">
                     <span class="game-controls">Pfeiltasten</span>
+                    <span class="play-btn">SPIELEN ▸</span>
+                </div>
+            </a>
+
+            <a href="Breakout/index.html" class="game-card breakout">
+                <div class="game-preview"><canvas id="prev-breakout"></canvas></div>
+                <div class="game-title">Breakout</div>
+                <div class="game-desc">Zerstöre alle Backsteine mit dem Ball. Lenke den Ball mit dem Paddle, sammle Combos und überstehe mehrere Level.</div>
+                <div class="game-meta">
+                    <span class="game-controls">Pfeiltasten / Maus</span>
                     <span class="play-btn">SPIELEN ▸</span>
                 </div>
             </a>
@@ -571,6 +586,111 @@
             requestAnimationFrame(draw);
         }
         draw();
+    })();
+    // Mini preview: Breakout
+    (function() {
+        const c = document.getElementById('prev-breakout');
+        const ctx = c.getContext('2d');
+        const W = c.width = c.offsetWidth * 2;
+        const H = c.height = c.offsetHeight * 2;
+
+        const COLS = 8, ROWS = 4;
+        const BW = Math.floor((W - 16) / COLS) - 3, BH = 9, BGAP = 3;
+        const BOX = (W - COLS * (BW + BGAP) + BGAP) / 2;
+        const ROW_COLORS = ['#ff3355','#ffaa00','#88ff44','#00ddff'];
+        const bricks = [];
+        for (let r = 0; r < ROWS; r++)
+            for (let cl = 0; cl < COLS; cl++)
+                bricks.push({ x: BOX + cl*(BW+BGAP), y: 18 + r*(BH+BGAP), alive: true, row: r });
+
+        const PW = 50, PH = 7;
+        let px = W/2, ball = { x: W/2, y: H*0.6, vx: 90, vy: -120, r: 5 };
+        let lastT = null;
+
+        function draw(ts) {
+            if (!lastT) lastT = ts;
+            const dt = Math.min((ts - lastT)/1000, 0.04);
+            lastT = ts;
+
+            ctx.fillStyle = '#000010';
+            ctx.fillRect(0, 0, W, H);
+
+            // Bricks
+            for (const b of bricks) {
+                if (!b.alive) continue;
+                ctx.save();
+                ctx.shadowColor = ROW_COLORS[b.row];
+                ctx.shadowBlur = 5;
+                ctx.fillStyle = ROW_COLORS[b.row];
+                ctx.beginPath();
+                ctx.roundRect(b.x+1, b.y+1, BW-2, BH-2, 2);
+                ctx.fill();
+                ctx.globalAlpha = 0.3;
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(b.x+2, b.y+2, BW-4, 2);
+                ctx.restore();
+            }
+
+            // Paddle (follows ball with lag)
+            px += (ball.x - px) * Math.min(1, dt * 5);
+            px = Math.max(PW/2, Math.min(W - PW/2, px));
+            ctx.save();
+            ctx.shadowColor = '#00aaff';
+            ctx.shadowBlur = 10;
+            const g = ctx.createLinearGradient(px-PW/2, H-18, px-PW/2, H-18+PH);
+            g.addColorStop(0, '#55ccff'); g.addColorStop(1, '#0077cc');
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.roundRect(px-PW/2, H-18, PW, PH, 3);
+            ctx.fill();
+            ctx.restore();
+
+            // Ball trail
+            ctx.save();
+            ctx.globalAlpha = 0.25;
+            ctx.fillStyle = '#00bbff';
+            ctx.beginPath();
+            ctx.arc(ball.x - ball.vx*dt*2, ball.y - ball.vy*dt*2, ball.r*0.6, 0, Math.PI*2);
+            ctx.fill();
+            ctx.restore();
+
+            // Ball
+            ctx.save();
+            ctx.shadowColor = '#00eeff'; ctx.shadowBlur = 14;
+            const bg = ctx.createRadialGradient(ball.x-1, ball.y-1, 0.5, ball.x, ball.y, ball.r);
+            bg.addColorStop(0, '#ffffff'); bg.addColorStop(0.5, '#88eeff'); bg.addColorStop(1, '#0099cc');
+            ctx.fillStyle = bg;
+            ctx.beginPath(); ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2); ctx.fill();
+            ctx.restore();
+
+            // Physics
+            ball.x += ball.vx * dt;
+            ball.y += ball.vy * dt;
+            if (ball.x - ball.r < 0) { ball.x = ball.r; ball.vx = Math.abs(ball.vx); }
+            if (ball.x + ball.r > W) { ball.x = W-ball.r; ball.vx = -Math.abs(ball.vx); }
+            if (ball.y - ball.r < 0) { ball.y = ball.r; ball.vy = Math.abs(ball.vy); }
+            if (ball.y + ball.r > H) { ball.y = ball.r*2; ball.vy = Math.abs(ball.vy); bricks.forEach(b=>b.alive=true); }
+            // Paddle
+            if (ball.vy > 0 && ball.y + ball.r >= H-18 && ball.y + ball.r <= H-18+PH+6 &&
+                ball.x >= px-PW/2-ball.r && ball.x <= px+PW/2+ball.r) {
+                ball.vy = -Math.abs(ball.vy);
+                ball.y = H-18 - ball.r - 1;
+            }
+            // Bricks
+            for (const b of bricks) {
+                if (!b.alive) continue;
+                const nx = Math.max(b.x, Math.min(ball.x, b.x+BW));
+                const ny = Math.max(b.y, Math.min(ball.y, b.y+BH));
+                if ((ball.x-nx)**2 + (ball.y-ny)**2 < ball.r**2) {
+                    b.alive = false;
+                    const fromTop = Math.abs(ball.y - b.y) < Math.abs(ball.x - b.x);
+                    if (fromTop) ball.vy *= -1; else ball.vx *= -1;
+                }
+            }
+
+            requestAnimationFrame(draw);
+        }
+        requestAnimationFrame(draw);
     })();
     </script>
 </body>
